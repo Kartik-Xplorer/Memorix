@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:async';
-import 'data.dart'; // Import the data.dart file for saving/loading game data
+import 'dart:math';
+import 'data.dart';
 
 class GamePage extends StatefulWidget {
   final String difficulty;
@@ -18,12 +18,14 @@ class _GamePageState extends State<GamePage> {
   int currentNumber = 1;
   int lives = 3;
   bool gameStarted = false;
-  late Timer timer;
+  Timer? timer;
   int elapsedTime = 0;
   bool hideNumbers = false;
   int gamesPlayed = 0;
   int highestTime = 0;
   int minimumTime = 0;
+  int wins = 0;
+  int losses = 0;
 
   @override
   void initState() {
@@ -33,14 +35,15 @@ class _GamePageState extends State<GamePage> {
     loadGameData();
   }
 
-  // Load the saved game data
   void loadGameData() async {
     try {
-      Map<String, int> gameData = await GameData.loadGameData();
+      Map<String, int> gameData = await GameData.loadGameData(widget.difficulty);
       setState(() {
-        highestTime = gameData['highestTime']!;
-        minimumTime = gameData['minimumTime']!;
-        gamesPlayed = gameData['gamesPlayed']!;
+        highestTime = gameData['highestTime'] ?? 0;
+        minimumTime = gameData['minimumTime'] ?? 0;
+        gamesPlayed = gameData['gamesPlayed'] ?? 0;
+        wins = gameData['wins'] ?? 0;
+        losses = gameData['losses'] ?? 0;
       });
     } catch (e) {
       print("Error loading game data: $e");
@@ -76,10 +79,12 @@ class _GamePageState extends State<GamePage> {
     setState(() {
       gameStarted = true;
       elapsedTime = 0;
+      hideNumbers = false;
     });
-    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    timer?.cancel();
+    timer = Timer.periodic(Duration(milliseconds: 100), (timer) {
       setState(() {
-        elapsedTime++;
+        elapsedTime += 100;
       });
     });
   }
@@ -97,31 +102,32 @@ class _GamePageState extends State<GamePage> {
         currentNumber++;
       });
       if (currentNumber > totalTiles) {
-        timer.cancel();
-        saveGameData();
-        showGameOverDialog("You Win! Time: $elapsedTime sec");
+        wins++;
+        endGame("You Win! Time: ${formatTime(elapsedTime)}");
       }
     } else {
       setState(() {
         lives--;
       });
       if (lives == 0) {
-        timer.cancel();
-        saveGameData();
-        showGameOverDialog("Game Over");
+        losses++;
+        endGame("Game Over");
       }
     }
   }
 
-  // Save the game data
+  void endGame(String message) {
+    timer?.cancel();
+    saveGameData();
+    showGameOverDialog(message);
+  }
+
   void saveGameData() async {
     if (elapsedTime > highestTime) highestTime = elapsedTime;
     if (minimumTime == 0 || elapsedTime < minimumTime) minimumTime = elapsedTime;
-
     gamesPlayed++;
-
     try {
-      await GameData.saveGameData(highestTime, minimumTime, gamesPlayed, elapsedTime);
+      await GameData.saveGameData(widget.difficulty, highestTime, minimumTime, gamesPlayed, elapsedTime, wins, losses);
     } catch (e) {
       print("Error saving game data: $e");
     }
@@ -135,25 +141,25 @@ class _GamePageState extends State<GamePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Highest Time: $highestTime sec"),
-            Text("Minimum Time: $minimumTime sec"),
+            Text("Highest Time: ${formatTime(highestTime)}"),
+            Text("Minimum Time: ${formatTime(minimumTime)}"),
             Text("Games Played: $gamesPlayed"),
+            Text("Wins: $wins"),
+            Text("Losses: $losses"),
           ],
         ),
         actions: [
-          // Restart button
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close the dialog
+              Navigator.pop(context);
               restartGame();
             },
             child: Text("Restart"),
           ),
-          // Back to menu button
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context); // Go back to the previous screen (e.g., menu)
+              Navigator.pop(context);
             },
             child: Text("Back to Menu"),
           ),
@@ -162,7 +168,6 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  // Restart the game
   void restartGame() {
     setState(() {
       gameStarted = false;
@@ -171,6 +176,10 @@ class _GamePageState extends State<GamePage> {
       hideNumbers = false;
       generateTiles();
     });
+  }
+
+  String formatTime(int time) {
+    return time >= 1000 ? "${(time / 1000).toStringAsFixed(2)} sec" : "$time ms";
   }
 
   @override
@@ -188,15 +197,13 @@ class _GamePageState extends State<GamePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Display lives
                   Row(
                     children: List.generate(lives, (index) => Icon(Icons.favorite, color: Colors.red)),
                   ),
-                  SizedBox(width: 20), // Space between lives and timer
-                  // Display elapsed time
+                  SizedBox(width: 20),
                   if (gameStarted)
                     Text(
-                      "Time: $elapsedTime sec",
+                      "Time: ${formatTime(elapsedTime)}",
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                 ],
@@ -213,46 +220,33 @@ class _GamePageState extends State<GamePage> {
               )
             else
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    double tileSize = constraints.maxHeight / 4.5;
-                    return GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 1,
-                        mainAxisSpacing: 4,
-                        crossAxisSpacing: 4,
-                      ),
-                      padding: EdgeInsets.all(8),
-                      itemCount: fixedPositions.length,
-                      itemBuilder: (context, index) {
-                        return fixedPositions[index] != null
-                            ? GestureDetector(
-                          onTap: () => onTileTap(fixedPositions[index]!),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer, // Light color fill
-                              border: Border.all(
-                                color: colorScheme.onSurface, // 1dp outline
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                hideNumbers ? "?" : "${fixedPositions[index]}", // Black text color
-                                style: TextStyle(
-                                  fontSize: tileSize * 0.4,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurfaceVariant, // Text color
-                                ),
-                              ),
-                            ),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 1,
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
+                  ),
+                  padding: EdgeInsets.all(8),
+                  itemCount: fixedPositions.length,
+                  itemBuilder: (context, index) {
+                    return fixedPositions[index] != null
+                        ? GestureDetector(
+                      onTap: () => onTileTap(fixedPositions[index]!),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            hideNumbers ? "?" : "${fixedPositions[index]}",
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           ),
-                        )
-                            : SizedBox.shrink();
-                      },
-                    );
+                        ),
+                      ),
+                    )
+                        : SizedBox.shrink();
                   },
                 ),
               ),

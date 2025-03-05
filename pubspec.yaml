@@ -37,7 +37,7 @@ dependencies:
   provider: ^6.1.2
   auto_size_text: ^3.0.0
   shared_preferences: ^2.0.6
-  flutter_echarts: ^2.3.0
+  fl_chart: ^0.70.2
 
 dev_dependencies:
   flutter_test:

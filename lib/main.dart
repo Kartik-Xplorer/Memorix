@@ -67,34 +67,15 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(),
         children: [
-          PageView(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              HomeScreen(),
-              StatsPage(),
-              SettingsPage(toggleTheme: widget.toggleTheme, themeMode: widget.themeMode),
-            ],
-            onPageChanged: (index) => setState(() => _selectedIndex = index),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 70), // Adjust height above navbar
-              child: FloatingActionButton.extended(
-                onPressed: () {
-                  print("Infinity Mode Activated");
-                },
-                label: const Text('Infinity'),
-                icon: const Icon(Icons.all_inclusive),
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant, // Light color
-                foregroundColor: Theme.of(context).colorScheme.onSurface, // Adaptive text/icon color
-              ),
-            ),
-          ),
+          HomeScreen(),
+          StatsPage(),
+          SettingsPage(toggleTheme: widget.toggleTheme, themeMode: widget.themeMode),
         ],
+        onPageChanged: (index) => setState(() => _selectedIndex = index),
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(

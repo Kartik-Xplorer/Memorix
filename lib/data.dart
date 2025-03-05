@@ -1,53 +1,39 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameData {
-  static const String _highestTimeKey = 'highestTime';
-  static const String _minimumTimeKey = 'minimumTime';
-  static const String _gamesPlayedKey = 'gamesPlayed';
-  static const String _gameTimesKey = 'gameTimes';
-
-  // Save game data (highest time, minimum time, games played, and elapsed time)
-  static Future<void> saveGameData(
-      int highestTime, int minimumTime, int gamesPlayed, int elapsedTime) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Get existing game times list or create a new one
-    List<int> gameTimes = prefs.getStringList(_gameTimesKey)?.map((e) => int.parse(e)).toList() ?? [];
-
-    // Add the current game time to the list
-    gameTimes.add(elapsedTime);
-
-    // Save the new game times list as a list of strings
-    await prefs.setStringList(_gameTimesKey, gameTimes.map((e) => e.toString()).toList());
-
-    // Save the highest time, minimum time, and number of games played
-    await prefs.setInt(_highestTimeKey, highestTime);
-    await prefs.setInt(_minimumTimeKey, minimumTime);
-    await prefs.setInt(_gamesPlayedKey, gamesPlayed);
+  static Future<void> saveGameData(String difficulty, int highestTime, int minimumTime, int gamesPlayed, int elapsedTime, int wins, int losses) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('${difficulty}_highestTime', highestTime);
+    await prefs.setInt('${difficulty}_minimumTime', minimumTime);
+    await prefs.setInt('${difficulty}_gamesPlayed', gamesPlayed);
+    await prefs.setInt('${difficulty}_elapsedTime', elapsedTime);
+    await prefs.setInt('${difficulty}_wins', wins);
+    await prefs.setInt('${difficulty}_losses', losses);
   }
 
-  // Load game data (highest time, minimum time, games played, and all game times)
-  static Future<Map<String, int>> loadGameData() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    int highestTime = prefs.getInt(_highestTimeKey) ?? 0;
-    int minimumTime = prefs.getInt(_minimumTimeKey) ?? 0;
-    int gamesPlayed = prefs.getInt(_gamesPlayedKey) ?? 0;
-
-    // Return a Map with the appropriate types (int)
+  static Future<Map<String, int>> loadGameData(String difficulty) async {
+    final prefs = await SharedPreferences.getInstance();
     return {
-      'highestTime': highestTime,
-      'minimumTime': minimumTime,
-      'gamesPlayed': gamesPlayed,
+      'highestTime': prefs.getInt('${difficulty}_highestTime') ?? 0,
+      'minimumTime': prefs.getInt('${difficulty}_minimumTime') ?? 0,
+      'gamesPlayed': prefs.getInt('${difficulty}_gamesPlayed') ?? 0,
+      'elapsedTime': prefs.getInt('${difficulty}_elapsedTime') ?? 0,
+      'wins': prefs.getInt('${difficulty}_wins') ?? 0,   // Added wins
+      'losses': prefs.getInt('${difficulty}_losses') ?? 0 // Added losses
     };
   }
 
-  // Load game times (list of integers)
-  static Future<List<int>> loadGameTimes() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+  static Future<void> incrementGamesPlayed(String difficulty, bool isWin) async {
+    final prefs = await SharedPreferences.getInstance();
+    int gamesPlayed = prefs.getInt('${difficulty}_gamesPlayed') ?? 0;
+    int wins = prefs.getInt('${difficulty}_wins') ?? 0;
+    int losses = prefs.getInt('${difficulty}_losses') ?? 0;
 
-    // Load and parse game times from SharedPreferences
-    List<String> gameTimesString = prefs.getStringList(_gameTimesKey) ?? [];
-    return gameTimesString.map((e) => int.parse(e)).toList();
+    await prefs.setInt('${difficulty}_gamesPlayed', gamesPlayed + 1);
+    if (isWin) {
+      await prefs.setInt('${difficulty}_wins', wins + 1);
+    } else {
+      await prefs.setInt('${difficulty}_losses', losses + 1);
+    }
   }
 }
