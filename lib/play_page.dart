@@ -15,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Welcome to Memorix'),
+        title: const Text('Select Difficulty:'),
       ),
       body: Stack(
         children: [
@@ -61,22 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Text('Play'),
                 ),
               ],
-            ),
-          ),
-          Positioned(
-            bottom: 50, // 56dp from the bottom
-            left: 0,
-            right: 0,
-            child: Center(
-              child: FloatingActionButton.extended(
-                onPressed: () {
-                  print("Infinity Mode Activated");
-                },
-                label: const Text('Infinity'),
-                icon: const Icon(Icons.all_inclusive),
-                backgroundColor: colorScheme.surfaceVariant, // Light color
-                foregroundColor: colorScheme.onSurface, // Adaptive text/icon color
-              ),
             ),
           ),
         ],

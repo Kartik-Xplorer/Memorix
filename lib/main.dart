@@ -67,15 +67,34 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
+      body: Stack(
         children: [
-          HomeScreen(),
-          StatsPage(),
-          SettingsPage(toggleTheme: widget.toggleTheme, themeMode: widget.themeMode),
+          PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              HomeScreen(),
+              StatsPage(),
+              SettingsPage(toggleTheme: widget.toggleTheme, themeMode: widget.themeMode),
+            ],
+            onPageChanged: (index) => setState(() => _selectedIndex = index),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10), // Adjust height above navbar
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  print("Welcome");
+                },
+                label: const Text('Memorix'),
+                icon: const Icon(Icons.bolt),
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant, // Light color
+                foregroundColor: Theme.of(context).colorScheme.onSurface, // Adaptive text/icon color
+              ),
+            ),
+          ),
         ],
-        onPageChanged: (index) => setState(() => _selectedIndex = index),
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
